@@ -41,12 +41,21 @@ def get_extensions():
         extension = CUDAExtension
         sources += source_cuda
         define_macros += [("WITH_CUDA", None)]
-        extra_compile_args["nvcc"] = [
+        nvcc_args = [
             "-DCUDA_HAS_FP16=1",
             "-D__CUDA_NO_HALF_OPERATORS__",
             "-D__CUDA_NO_HALF_CONVERSIONS__",
             "-D__CUDA_NO_HALF2_OPERATORS__",
         ]
+        # Add support for multiple GPU architectures.
+        # https://developer.nvidia.com/cuda-gpus
+        compute_capabilities = ["7.5", "8.9", "9.0", "12.0"]
+        
+        for cap in compute_capabilities:
+            sm_cap = cap.replace(".", "")
+            nvcc_args.append(f"-gencode=arch=compute_{sm_cap},code=sm_{sm_cap}")
+
+        extra_compile_args["nvcc"] = nvcc_args
     else:
         if CUDA_HOME is None:
             raise NotImplementedError('CUDA_HOME is None. Please set environment variable CUDA_HOME.')
